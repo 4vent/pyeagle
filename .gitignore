@@ -1,0 +1,7 @@
+/test/*
+/log/
+/cookie.json
+pg.*
+test.*
+!/test.py
+__pycache__/
