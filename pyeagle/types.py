@@ -1,4 +1,5 @@
 import json
+import re
 import warnings
 from typing import Any, Literal, Type, TypeVar
 
@@ -172,10 +173,10 @@ class _ImagesMappings(APIResponce):
 class _Folder(APIResponce):
     def __init__(self, id: str,
                  name: str,
-                 description: str,
                  children: list[dict],
                  modificationTime: int,
                  tags: list[str], *,
+                 description: str = UNDEFINED,  # type: ignore
                  imageCount: int = UNDEFINED,  # type: ignore
                  descendantImageCount: int = UNDEFINED,  # type: ignore
                  pinyin: str = UNDEFINED,  # type: ignore
@@ -315,7 +316,8 @@ class _SmartFolder(_Folder):
         
         self.conditions: list[_Condition] = maplist(conditions, _Condition)
 
-        super().__init__(id, name, description, children, modificationTime, tags,
+        super().__init__(id=id, name=name, description=description, children=children,
+                         modificationTime=modificationTime, tags=tags,
                          imageCount=imageCount, descendantImageCount=descendantImageCount,
                          pinyin=pinyin, extendTags=extendTags,
                          password=password, passwordTips=passwordTips,
@@ -362,6 +364,17 @@ class _ApplicationInfo(APIResponce):
         super().__init__(**kwargs)
 
 
+class _Library(APIResponce):
+    def __init__(self, path: str,
+                 name: str,
+                 **kwargs) -> None:
+        
+        self.path = path
+        self.name = name
+
+        super().__init__(**kwargs)
+
+
 class _LibraryInfo(APIResponce):
     def __init__(self, folders: list[dict],
                  smartFolders: list[dict],
@@ -378,7 +391,7 @@ class _LibraryInfo(APIResponce):
         self.tagsGroups: list[_TagsGroup] = maplist(tagsGroups, _TagsGroup)
         self.modificationTime = modificationTime
         self.applicationVersion = applicationVersion
-        self.library = library
+        self.library = _Library(**library)
 
         super().__init__(**kwargs)
 
@@ -416,7 +429,7 @@ class OfflineItem(APIResponce):
                  **kwargs) -> None:
 
         self.path = path
-        self.name = name
+        self.name = re.sub(r'[\/\\\:\*\?\"\<\>\|]', '_', name)
         self.website = website
         self.tags = tags
         self.annotation = annotation

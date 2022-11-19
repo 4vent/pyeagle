@@ -4,6 +4,7 @@ from typing import Literal
 import requests
 
 from . import types
+from .utility import Utility
 
 
 class EagleAPI():
@@ -13,6 +14,12 @@ class EagleAPI():
         self.FOLDER = _API_FOLDER(self)
         self.ITEM = _API_ITEM(self)
         self.LIBRARY = _API_LIBRARY(self)
+        self.utility = Utility(self)
+
+        self._get_libpath()
+    
+    def _get_libpath(self):
+        self.__libpath__ = self.LIBRARY.info().library.path
 
     def get(self, _url: str, **query) -> dict:
         if not _url.startswith('https://'):
@@ -84,10 +91,10 @@ class _API_ITEM(_CHILD_API):
 
     def addFromPath(self, path: str, name: str, *, website: str | None = None,
                     tags: list[str] | None = None, annotation: str | None = None,
-                    folderId: str | None = None, headers: dict = {}):
+                    folderId: str | None = None):
         res = self._api.post('/item/addFromPath', path=path, name=name,
                              website=website, tags=tags, annotation=annotation,
-                             folderId=folderId, headers=headers)
+                             folderId=folderId)
         return res
 
     def addFromPaths(self, items: list[types.OfflineItem], folderId: str | None = None):
@@ -155,4 +162,5 @@ class _API_LIBRARY(_CHILD_API):
 
     def switch(self, libraryPath: str):
         res = self._api.post('/library/switch', libraryPath=libraryPath)
+        self._api._get_libpath()
         return res

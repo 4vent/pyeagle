@@ -25,5 +25,5 @@ def _testout(data: str | bytes | dict[Any, Any] | pyeagle.types.APIResponce | li
                 f.write(data)  # type: ignore
 
 
-api = pyeagle.EagleAPIEx()
-_testout(api.getFoldersByName('未分類'))
+api = pyeagle.EagleAPI()
+api.utility.renameItem('LAK2MLKQTJNUV', 'renaaaaaaaaaaaameee!!!')
