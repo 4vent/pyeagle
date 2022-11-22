@@ -14,7 +14,7 @@ class EagleAPI():
         self.FOLDER = _API_FOLDER(self)
         self.ITEM = _API_ITEM(self)
         self.LIBRARY = _API_LIBRARY(self)
-        self.utility = Utility(self)
+        self.util = Utility(self)
 
         self._get_libpath()
     
@@ -140,8 +140,8 @@ class _API_ITEM(_CHILD_API):
         return (types._Item(**res['data'])
                 if res['status'] == 'success' else res)
 
-    def list(self, *, keyword: str | None = None, ext: str | None = None,
-             orderBy: types.ORDER | None = None, limit: int = 200, offset: int = 0,
+    def list(self, limit: int, *, keyword: str | None = None, ext: str | None = None,
+             orderBy: types.ORDER | None = None, offset: int = 0,
              tags: list[str] = [], folders: list[str] = []) -> list[types._Item] | dict:
         res = self._api.get('/item/list', keyword=keyword, ext=ext,
                             orderBy=orderBy, limit=limit, offset=offset,

@@ -1,3 +1,4 @@
+from glob import glob
 import json
 import os
 from datetime import datetime
@@ -165,6 +166,29 @@ class Utility():
                 os.rename(new_thumb_path, old_thumb_path)
             
             raise
+    
+    def itemOriginalFilePath(self, item: types._Item):
+        return self.__eapi.__libpath__ + '\\images\\' + item.id + '.info\\' + item.name + '.' + item.ext
+        
+    def itemThumbnailFilePath(self, item: types._Item):
+        return self.__eapi.__libpath__ + '\\images\\' + item.id + '.info\\' + item.name + '_thumbnail.png'
+    
+    def importFolder(self, src: str, name: str = None, parent: str = None):
+        if not name:
+            name = os.path.basename(src)
+        pfolder = self.__eapi.FOLDER.create(name, parent)
+
+        paths = glob(src + '\\*')
+        for dir in [p for p in paths if os.path.isdir(p)]:
+            self.importFolder(dir, parent=pfolder.id)
+        append_files: list[types.OfflineItem] = []
+        for file in [p for p in paths if os.path.isfile(p)]:
+            append_files.append(types.OfflineItem(
+                os.path.abspath(file),
+                '.'.join(os.path.basename(file).split('.')[:-1])
+            ))
+        if len(append_files) > 0:
+            self.__eapi.ITEM.addFromPaths(append_files, pfolder.id)
 
 
 if __name__ == "__main__":

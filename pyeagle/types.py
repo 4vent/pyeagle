@@ -1,7 +1,7 @@
 import json
 import re
 import warnings
-from typing import Any, Literal, Type, TypeVar
+from typing import Any, Literal, Type
 
 UNDEFINED = type('UNDEFINED', (object,), {})
 STATUS = Literal['success', 'error']
@@ -32,7 +32,7 @@ class APIResponce():
     def __init__(self, **kwargs) -> None:
 
         for k, v in kwargs.items():
-            warnings.warn(f'Unknown Key "{k}" in <{type(self).__name__}>. (Module bug or Updated Fanbox API.) '
+            warnings.warn(f'\nUnknown Key "{k}" in <{type(self).__name__}>. (Module bug or Updated Fanbox API.) '
                           'You can use this key but there is no autocomplete.')
             setattr(self, k, v)
 
@@ -137,7 +137,8 @@ class _Item(APIResponce):
         self.folders = folders
         self.isDeleted = isDeleted
         self.url = url
-        self.annotation = annotation
+        self.annotation = self.format_annotation(annotation)
+        self._raw_annotation = annotation
         self.modificationTime = modificationTime
         self.height = height
         self.width = width
@@ -150,6 +151,10 @@ class _Item(APIResponce):
         self.duration = duration
 
         super().__init__(**kwargs)
+    
+    @staticmethod
+    def format_annotation(anno_text):
+        return re.sub(r'<a href=".+" target="_blank">(.+)</a>', r'\1', anno_text)
 
 
 class _Styles(APIResponce):
@@ -201,6 +206,7 @@ class _Folder(APIResponce):
                  orderBy: str = UNDEFINED,  # type: ignore
                  sortIncrease: bool = UNDEFINED,  # type: ignore
                  isSelected: bool = UNDEFINED,  # type: ignore
+                 folders: list[dict] = UNDEFINED,  #type: ignore
                  **kwargs) -> None:
         
         self.id = id
@@ -233,6 +239,7 @@ class _Folder(APIResponce):
         self.orderBy = orderBy
         self.sortIncrease = sortIncrease
         self.isSelected = isSelected
+        self.folders = maplist(folders, _Folder)
 
         if '$$hashKey' in kwargs:
             self._hashKey: str = kwargs['$$hashKey']

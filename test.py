@@ -26,4 +26,4 @@ def _testout(data: str | bytes | dict[Any, Any] | pyeagle.types.APIResponce | li
 
 
 api = pyeagle.EagleAPI()
-api.utility.renameItem('LAK2MLKQTJNUV', 'renaaaaaaaaaaaameee!!!')
+api.util.importFolder('test')
