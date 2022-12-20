@@ -1,5 +1,5 @@
 import json
-from typing import Literal
+from typing import Any, Literal, overload
 
 import requests
 
@@ -19,7 +19,7 @@ class EagleAPI():
         self._get_libpath()
     
     def _get_libpath(self):
-        self.__libpath__ = self.LIBRARY.info().library.path
+        self.__libpath__ = self.LIBRARY.info().library.path  # type: ignore
 
     def get(self, _url: str, **query) -> dict:
         if not _url.startswith('https://'):
@@ -67,11 +67,21 @@ class _API_FOLDER(_CHILD_API):
         res = self._api.get('/folder/listRecent')
         return (types.maplist(res['data'], types._Folder)
                 if res['status'] == 'success' else res)
+    
+    _list = list
+
+    @overload
+    def list(self) -> list[types._Folder] | dict[Any, Any]: ...
+    @overload
+    def list(self, raw: Literal[True] = True) -> _list[dict[Any, Any]]: ...
         
-    def list(self) -> list[types._Folder] | dict:
+    def list(self, raw=False) -> Any:
         res = self._api.get('/folder/list')
-        return (types.maplist(res['data'], types._Folder)
-                if res['status'] == 'success' else res)
+        if not raw:
+            return (types.maplist(res['data'], types._Folder)
+                    if res['status'] == 'success' else res)
+        else:
+            return res['data']
         
 
 class _API_ITEM(_CHILD_API):
@@ -98,8 +108,11 @@ class _API_ITEM(_CHILD_API):
         return res
 
     def addFromPaths(self, items: list[types.OfflineItem], folderId: str | None = None):
-        res = self._api.post('/item/addFromPaths', items=items, folderId=folderId)
-        return res
+        if len(items) > 0:
+            res = self._api.post('/item/addFromPaths', items=items, folderId=folderId)
+            return res
+        else:
+            return
 
     def addBookmark(self, url: str, name: str, *, base64: str | None = None,
                     tags: list[str] | None = None,

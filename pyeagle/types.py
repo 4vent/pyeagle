@@ -1,7 +1,7 @@
 import json
 import re
 import warnings
-from typing import Any, Literal, Type
+from typing import Any, Literal, Type, TypeVar
 
 UNDEFINED = type('UNDEFINED', (object,), {})
 STATUS = Literal['success', 'error']
@@ -38,10 +38,10 @@ class APIResponce():
 
 
 # T = TypeVar('EagleResponce', (_NewFolder, _Palette, _Item, _Styles, _ImagesMappings, _Folder, _Rule))
-# T = TypeVar('EagleResponce', APIResponce)
+EagleResponce = TypeVar('EagleResponce')
 
 
-def maplist(_l: list[dict], type: Type[APIResponce]) -> list[APIResponce]:
+def maplist(_l: list[dict], type: Type[EagleResponce]) -> list[EagleResponce]:
     if _l == UNDEFINED:
         return UNDEFINED  # type: ignore
     elif _l is None:
@@ -125,6 +125,9 @@ class _Item(APIResponce):
                  noPreview: bool = UNDEFINED,  # type: ignore
                  text: str = UNDEFINED,  # type: ignore
                  duration: int = UNDEFINED,  # type: ignore
+                 star = UNDEFINED,
+                 comments = UNDEFINED,
+                 thumbnailAt = UNDEFINED,
                  **kwargs) -> None:
         
         self.id = id
@@ -429,10 +432,10 @@ class OnlineItem(APIResponce):
 class OfflineItem(APIResponce):
     def __init__(self, path: str,
                  name: str, *,
-                 website: str = UNDEFINED,  # type: ignore
-                 tags: list[str] = UNDEFINED,  # type: ignore
-                 annotation: str = UNDEFINED,  # type: ignore
-                 headers: dict = UNDEFINED,  # type: ignore
+                 website: str | Type[UNDEFINED] = UNDEFINED,
+                 tags: list[str] | Type[UNDEFINED] = UNDEFINED,
+                 annotation: str | Type[UNDEFINED] = UNDEFINED,
+                 headers: dict | Type[UNDEFINED] = UNDEFINED,
                  **kwargs) -> None:
 
         self.path = path

@@ -2,12 +2,14 @@ from glob import glob
 import json
 import os
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, Type, overload
 
 from . import types
 
 if TYPE_CHECKING:
     from .main import EagleAPI
+
+from .types import UNDEFINED, _Folder
 
 
 class Backup():
@@ -41,13 +43,23 @@ class Utility():
                     return result
             return None
     
-    def getFolderByID(self, id: str) -> types._Folder | None:
+    @overload
+    def getFolderByID(self, id: str) -> types._Folder | None: ...
+    @overload
+    def getFolderByID(self, id: str, raise_error: Literal[True] = True) -> types._Folder: ...
+    @overload
+    def getFolderByID(self, id: str, raise_error: Literal[False] = False) -> types._Folder | None: ...
+
+    def getFolderByID(self, id: str, raise_error=False) -> types._Folder | None:
         folders = self.__eapi.FOLDER.list()
         for folder in folders:
             result = Utility.__recGetFolderByID(folder, id)
             if result is not None:
                 return result
-        return None
+        if raise_error:
+            raise KeyError(f'folder id {id} is not found.')
+        else:
+            return None
     
     @staticmethod
     def __recGetFoldersByName(folder: types._Folder, name: str) -> list[types._Folder]:
@@ -166,29 +178,76 @@ class Utility():
                 os.rename(new_thumb_path, old_thumb_path)
             
             raise
+    @overload
+    def itemOriginalFilePath(self, item: types._Item) -> str: ...
+    @overload
+    def itemOriginalFilePath(self, id: str, filename: str) -> str: ...
+    @overload
+    def itemOriginalFilePath(self, id: str, filestem: str, ext: str) -> str: ...
     
-    def itemOriginalFilePath(self, item: types._Item):
-        return self.__eapi.__libpath__ + '\\images\\' + item.id + '.info\\' + item.name + '.' + item.ext
+    def itemOriginalFilePath(self, *args, **kwargs) -> str:
+        if isinstance(args[0], types._Item):
+            return self.__eapi.__libpath__ + '\\images\\' + args[0].id + '.info\\' + args[0].name + '.' + args[0].ext
+        elif len(args) == 2:
+            return self.__eapi.__libpath__ + '\\images\\' + args[0] + '.info\\' + args[1]
+        else:
+            return self.__eapi.__libpath__ + '\\images\\' + args[0] + '.info\\' + args[1] + '.' + args[2]
         
     def itemThumbnailFilePath(self, item: types._Item):
         return self.__eapi.__libpath__ + '\\images\\' + item.id + '.info\\' + item.name + '_thumbnail.png'
     
-    def importFolder(self, src: str, name: str = None, parent: str = None):
+    def importFolder(self, src: str, name: str | None = None,
+                     parent: str | None = None,
+                     website: str | Type[UNDEFINED] = UNDEFINED,
+                     tags: list[str] | Type[UNDEFINED] = UNDEFINED,
+                     annotation: str | Type[UNDEFINED] = UNDEFINED):
         if not name:
             name = os.path.basename(src)
         pfolder = self.__eapi.FOLDER.create(name, parent)
+        if not isinstance(pfolder, types._NewFolder):
+            raise RuntimeError('Create Folder Faild')
 
         paths = glob(src + '\\*')
         for dir in [p for p in paths if os.path.isdir(p)]:
-            self.importFolder(dir, parent=pfolder.id)
+            self.importFolder(dir, None, pfolder.id, website, tags, annotation)
         append_files: list[types.OfflineItem] = []
         for file in [p for p in paths if os.path.isfile(p)]:
             append_files.append(types.OfflineItem(
                 os.path.abspath(file),
-                '.'.join(os.path.basename(file).split('.')[:-1])
+                '.'.join(os.path.basename(file).split('.')[:-1]),
+                website=website,
+                tags=tags,
+                annotation=annotation
             ))
         if len(append_files) > 0:
             self.__eapi.ITEM.addFromPaths(append_files, pfolder.id)
+
+
+    @staticmethod
+    def recursive_get_parents(target_id: str, parent: _Folder) -> list[_Folder] | None:
+        if target_id in [c.id for c in parent.children]:
+            return [parent] + [c for c in parent.children if c.id == target_id]
+        elif target_id == parent.id:
+            return [parent]
+        
+        for child in parent.children:
+            parents = Utility.recursive_get_parents(target_id, child)
+            if isinstance(parents, list):
+                return [parent] + parents
+            else:
+                pass
+        
+        return None
+    
+    def get_parents(self, target_id: str, root_parent: _Folder):
+        parents = Utility.recursive_get_parents(target_id, root_parent)
+
+        if parents is None:
+            raise KeyError(f'Folder "{target_id}" '
+                           f'is not grandchild of '
+                           f'Folder "{root_parent.id}"')
+                           
+        return parents
 
 
 if __name__ == "__main__":
